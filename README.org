@@ -11,6 +11,8 @@
      
      The arg also can be a list.The first element is the url, others is the keywords with args.You can get them in the second example.
      
+     ~package-require-repo-directory~ is the variable of the repo's path.By default, it's ~"~/.emacs.d/third-party/"~
+
      Examples:
      #+begin_src emacs-lisp
        (package-require test
