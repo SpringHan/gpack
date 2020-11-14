@@ -34,6 +34,34 @@
 	:type 'string
 	:group 'package-require)
 
+(defcustom package-require-clone-process nil
+	"The process of package-require-clone."
+	:type 'process
+	:group 'package-require)
+
+(defcustom package-require-temp-load-path nil
+	"The temp load-path."
+	:type 'symbol
+	:group 'package-require)
+
+(defcustom package-require-temp-name ""
+	"The temp name."
+	:type 'string
+	:group 'package-require)
+
+(defcustom package-require-temp-autoload-p nil
+	"If autoload."
+	:type 'symbol
+	:group 'package-require)
+
+(defcustom package-require-temp-package-name nil
+	"The package's name."
+	:type 'symbol
+	:group 'package-require)
+
+(defconst package-require-clone-output-buffer "*Package-Require-Clone-Output*"
+	"The buffer name of clone output.")
+
 (defun package-require-download (name)
 	"Download the package if it has not downloaded."
 	(unless (package-installed-p name)
@@ -46,26 +74,13 @@
 			(add-to-list 'load-path path)
 		(add-to-list (cdr-safe path) (car path))))
 
-(defmacro package-require-get-variable (vlist)
-	"Get variables."
-	(declare (debug t))
-	(if (symbolp `',(car vlist))
-			`(package-require-set-variable (list ',(car vlist) ,(cdr-safe vlist)))
-		(let (var-list tmp)
-			(dolist (var vlist)
-				(setq var-list (append var-list (list `',(car var) `,(cdr-safe var)))))
-			`(package-require-set-variable ,var-list))))
-
 (defun package-require-set-variable (vars)
 	"Set variables."
 	(when (listp vars)
 		(if (symbolp (car vars))
-				;; (setq (car vars) (cadr vars))
-				(set (car vars) (cdr-safe vars))
+				(set (car vars) (eval (cdr-safe vars)))
 			(dolist (var-list vars)
-				;; (setq (car var-list) (cadr var-list)))
-				(set (car var-list) (cdr-safe var-list)))
-			)))
+				(set (car var-list) (eval (cdr-safe var-list)))))))
 
 (defun package-require-add-hook (hlist)
 	"Add hooks."
@@ -110,38 +125,174 @@
 (defun package-require-key--by-map (map key-info)
 	"Define key with map."
 	(if (stringp (car key-info))
-			(define-key (symbol-value map) (car key-info) (cdr-safe key-info))
+			(define-key (symbol-value map) (kbd (car key-info)) (cdr-safe key-info))
 		(if (eq (car key-info) 'lambda)
-				(define-key (symbol-value map) (car key-info) (cdr-safe key-info))
+				(define-key (symbol-value map) (kbd (car key-info)) (cdr-safe key-info))
 			(dolist (key key-info)
-				(define-key (symbol-value map) (car key) (cdr-safe key))))))
+				(define-key (symbol-value map) (kbd (car key)) (cdr-safe key))))))
+
+(defun package-require-repo (repo)
+	"Get the package from remote git repository."
+	(unless (file-exists-p package-require-repo-directory)
+		(make-directory package-require-repo-directory))
+	(let (dir dir-name)
+		(if (stringp repo)
+				(progn
+					(setq dir (package-require-repo--get-repo-name
+										 (package-require-repo--get-repo-url repo)))
+					(setq dir-name (concat package-require-repo-directory dir))
+					(if (file-exists-p dir-name)
+							(package-require-repo--require dir-name
+																						 package-require-temp-package-name
+																						 'load-path)
+						(package-require-repo--clone (package-require-repo--get-repo-url repo)
+																				 dir 1)))
+			;; If the repo is a list
+			(let ((args (cdr repo))
+						(depth 1)
+						name load)
+				(while (keywordp (car-safe args))
+					(pcase (pop args)
+						(:save (setq name (pop args)))
+						(:load (setq load (pop args)))
+						(:depth (setq depth (pop args)))))
+				(setq dir (if name
+											name
+										(package-require-repo--get-repo-name
+										 (package-require-repo--get-repo-url
+											(car repo)))))
+				(setq dir-name (concat package-require-repo-directory dir))
+				(if (file-exists-p dir-name)
+						(package-require-repo--require dir-name
+																					 package-require-temp-package-name
+																					 (if load
+																							 load
+																						 'load-path))
+					(package-require-repo--clone
+					 (package-require-repo--get-repo-url
+						(car repo))
+					 (if name
+							 name
+						 dir)
+					 depth
+					 (when load
+						 load)))))))
+
+(defun package-require-repo--require (dir name path)
+	"Require the package."
+	(add-to-list path dir)
+	(when package-require-temp-package-name
+		(if package-require-temp-autoload-p
+				(autoload (symbol-name name) name)
+			(require name))
+		(setq package-require-temp-autoload-p nil
+					package-require-temp-package-name nil)))
+
+(defun package-require-repo--clone (url name depth &optional load)
+	"Clone the repository from URL."
+	(split-window nil nil 'above)
+	(switch-to-buffer package-require-clone-output-buffer)
+	(setq package-require-temp-load-path (if load
+																					 load
+																				 'load-path)
+				package-require-temp-name name)
+	(if depth
+			(setq package-require-clone-process
+						(start-process "Package-Require-Clone"
+													 package-require-clone-output-buffer
+													 "git"
+													 "clone"
+													 url
+													 (expand-file-name name package-require-repo-directory)
+													 (format "--depth=%d" depth)))
+		(setq package-require-clone-process
+					(start-process "Package-Require-Clone"
+												 package-require-clone-output-buffer
+												 "git"
+												 "clone"
+												 url
+												 (expand-file-name name package-require-repo-directory))))
+	(set-process-sentinel package-require-clone-process
+												#'package-require-clone--sentinel))
+
+(defun package-require-clone--sentinel (process event)
+	"Sentinel for clone process."
+	(when (memq (process-status process) '(exit signal))
+		(setq event (substring event 0 -1))
+		(when (string-match "^finished" event)
+			(message "[Package-Require]: Clone finished.")
+			(kill-buffer-and-window)
+			(add-to-list package-require-temp-load-path
+									 (concat package-require-repo-directory
+													 package-require-temp-name))
+			(when package-require-temp-package-name
+				(if package-require-temp-autoload-p
+						(autoload
+							package-require-temp-package-name
+							(symbol-name package-require-temp-package-name))
+					(require package-require-temp-package-name)))
+			(setq package-require-clone-process nil
+						package-require-temp-load-path nil
+						package-require-temp-name ""
+						package-require-temp-autoload-p nil
+						package-require-temp-package-name nil))))
+
+(defun package-require-repo--get-repo-name (string)
+	"Return the repo's name in STRING."
+	(if (not (string-match-p "^https://\\(?:.*\\)" string))
+			string
+		(let ((result
+					 (progn (string-match "^https://\\(?:.*\\..*\\)/\\(?:.*/\\)\\(.*\\)\\(?:\\.git\\)?"
+																string)
+									(match-string 1 string))))
+			(when (string-match-p "^\\(?:.*\\)\\.git" result)
+				(setq result (progn
+											 (string-match "^\\(.*\\)\\.git" result)
+											 (match-string 1 result))))
+			result)))
+
+(defun package-require-repo--get-repo-url (string)
+	"Return the repo's url."
+	(if (not (string-match-p "^https://\\(?:.*\\)" string))
+			(format "https://github.com/%s" string)
+		string))
 
 (defmacro package-require-read-args (name args)
 	"Read ARGS and do the actions."
 	(declare (debug t))
 	(let ((requirep t)
-				hook var key repo load-path before config autoload)
+				(unrequire nil)
+				hook var key repo load-path before config autoload outside)
 		(while (keywordp (car-safe args))
 			(pcase (pop args)
 				(:hook (setq hook (pop args)))
 				(:var (setq var (pop args)))
 				(:key (setq key (pop args)))
-				(:repo (setq repo (pop args)))
-				(:load-path (setq load-path (pop args)))
+				(:repo (setq repo (pop args)
+										 requirep nil))
+				(:load-path (setq load-path (pop args)
+													outside t))
 				(:before (setq before (pop args)))
 				(:config (setq config (pop args)))
-				(:autoload (setq autoload (pop args)
+				(:autoload (setq autoload t
 												 requirep nil))
-				(:un-require (setq requirep nil))))
+				(:un-require (setq requirep nil
+													 unrequire t))))
 		`(progn
 			 ,(when before
 					`(eval ',before))
 			 ,(when load-path
 					`(package-require-load-path ',load-path))
 			 ,(when repo
-					`(package-require-repo ,repo))
+					`(progn (setq package-require-temp-package-name (if (or ,requirep
+																																	(null ,unrequire))
+																															',name
+																														nil)
+												package-require-temp-autoload-p ,autoload)
+									(package-require-repo ',repo)))
 			 (when ,requirep
-				 (when (not (require ',name nil t))
+				 (when (and (not (require ',name nil t))
+										(null outside))
 					 (package-require-download ',name)
 					 (require ',name)))
 			 ,(when config
