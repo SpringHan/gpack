@@ -23,6 +23,10 @@
 ;; For a full copy of the GNU General Public License
 ;; see <http://www.gnu.org/licenses/>.
 
+
+;;; Commentary:
+;; `Package-Require' can help you to manage your packages easily.
+
 ;;; Code:
 
 (defgroup package-require nil
@@ -40,7 +44,7 @@
   :group 'package-require)
 
 (defcustom package-require-temp-load-path nil
-  "The temp load-path."
+  "The temp `load-path'."
   :type 'symbol
   :group 'package-require)
 
@@ -63,19 +67,21 @@
   "The buffer name of clone output.")
 
 (defun package-require-download (name)
-  "Download the package if it has not downloaded."
+  "Download the package if it has not downloaded.
+Argument NAME the package's name."
   (unless (package-installed-p name)
     (package-refresh-contents)
     (package-install name)))
 
 (defun package-require-load-path (path)
-  "Define the load path."
+  "Define the load PATH."
   (if (stringp path)
       (add-to-list 'load-path path)
     (add-to-list (cdr-safe path) (car path))))
 
 (defun package-require-set-variable (vars)
-  "Set variables."
+  "Set variables.
+Argument VARS is the variables' list."
   (when (listp vars)
     (if (symbolp (car vars))
         (set (car vars) (eval (cdr-safe vars)))
@@ -83,7 +89,8 @@
         (set (car var-list) (eval (cdr-safe var-list)))))))
 
 (defun package-require-add-hook (hlist)
-  "Add hooks."
+  "Add hooks.
+Argument HLIST is the hook list."
   (when (listp hlist)
     (if (symbolp (car hlist))
         (package-require-hook--by-list (car hlist) (cdr-safe hlist))
@@ -109,7 +116,8 @@
         (add-hook hook func)))))
 
 (defun package-require-define-key (klist)
-  "Define keybindings."
+  "Define keybindings.
+Argument KLIST is the key list."
   (when (listp klist)
     (if (not (listp (car klist)))
         (package-require-key--item-define klist)
@@ -117,13 +125,14 @@
         (package-require-key--item-define key-list)))))
 
 (defun package-require-key--item-define (item)
-  "Define key by a item."
+  "Define key by a ITEM."
   (pcase (type-of (car item))
     ('string (global-set-key (kbd (car item)) (cdr-safe item)))
     ('symbol (package-require-key--by-map (car item) (cdr-safe item)))))
 
 (defun package-require-key--by-map (map key-info)
-  "Define key with map."
+  "Define key with MAP.
+Argument KEY-INFO is the key list for MAP."
   (if (stringp (car key-info))
       (define-key (symbol-value map) (kbd (car key-info)) (cdr-safe key-info))
     (if (eq (car key-info) 'lambda)
@@ -132,7 +141,8 @@
         (define-key (symbol-value map) (kbd (car key)) (cdr-safe key))))))
 
 (defun package-require-repo (repo)
-  "Get the package from remote git repository."
+  "Get the package from remote git repository.
+Argument REPO is the repository's info."
   (unless (file-exists-p package-require-repo-directory)
     (make-directory package-require-repo-directory))
   (let (dir dir-name)
@@ -179,7 +189,10 @@
              load)))))))
 
 (defun package-require-repo--require (dir name path)
-  "Require the package."
+  "Require the package.
+Argument DIR is the directory for package.
+Argument NAME is the name of package.
+Argument PATH is the `load-path' of package."
   (add-to-list path dir)
   (when package-require-temp-package-name
     (if package-require-temp-autoload-p
@@ -189,7 +202,10 @@
           package-require-temp-package-name nil)))
 
 (defun package-require-repo--clone (url name depth &optional load)
-  "Clone the repository from URL."
+  "Clone the repository from URL.
+Argument NAME is the repository's name at locale.
+Argument DEPTH is the depth for cloning.
+Optional argument LOAD is the `load-path' for package."
   (split-window nil nil 'above)
   (switch-to-buffer package-require-clone-output-buffer)
   (setq package-require-temp-load-path (if load
@@ -252,13 +268,15 @@
       result)))
 
 (defun package-require-repo--get-repo-url (string)
-  "Return the repo's url."
+  "Return the repo's url.
+Argument STRING is the string which includes url."
   (if (not (string-match-p "^https://\\(?:.*\\)" string))
       (format "https://github.com/%s" string)
     string))
 
 (defmacro package-require-read-args (name args)
-  "Read ARGS and do the actions."
+  "Read ARGS and do the actions.
+Argument NAME is the package's name."
   (declare (debug t))
   (let ((requirep t)
         (unrequire nil)
