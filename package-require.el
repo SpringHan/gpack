@@ -3,7 +3,7 @@
 ;; Author: SpringHan
 ;; Maintainer: SpringHan
 ;; Version: 1.0
-;; Package-Requires: (emacs "26.3")
+;; Package-Requires: ((emacs "26.3"))
 ;; Homepage: https://github.com/SpringHan/package-require
 ;; Keywords: package-manager
 
