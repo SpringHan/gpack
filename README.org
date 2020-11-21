@@ -1,51 +1,54 @@
-* Package-Require
-  Package-Require is an Emacs package manager, which is light with more features.
+* Gpack
+  Gpack(means Get Package) is an Emacs package manager, which is light with more features.
 
 ** Syntax
-   Package-Require's main function is ~package-require~(A macro).
+   Gpack's main function is ~gpack~ (A macro).
    It has some keywords:
 
    - ~:repo~ - Get the remote git repository
      The arg of ~:repo~ can be a string, which is the git repository url.
+
      If it's "UserName/RepositoryName", the GitHub is the default remote.It can be other repositorys.
      
      The arg also can be a list.The first element is the url, others is the keywords with args.You can get them in the second example.
      
-     ~package-require-repo-directory~ is the variable of the repo's path.By default, it's ~"~/.emacs.d/third-party/"~
+     ~gpack-repo-directory~ is the variable of the repo's path.By default, it's ~"~/.emacs.d/third-party/"~
 
      Examples:
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :repo "SpringHan/test")
      #+end_src
 
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :repo ("SpringHan/test" :save "Test" :load custom-theme-load-path :depth nil))
        ;;; `:save' is the local directory's name which will be clone at locale.
        ;;; `:load' is the load path.
        ;;; `:depth' is the depth for the clone, it can be number.If it's nil, the whole repository will be clone.
      #+end_src
+     
+     When the clone succeeded, you should press any key to confirm.
 
    - ~:hook~ - Add hooks
      Examples:
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :hook (after-init-hook . test-mode))
      #+end_src
 
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :hook (after-init-hook . (test-mode test-2-mode)))
      #+end_src
 
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :hook ((emacs-lisp-mode-hook after-init-hook) . test-mode))
      #+end_src
 
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :hook ((after-init-hook . test-mode)
                 (emacs-lisp-mode-hook . (test-mode test-2-mode))
                 ((lisp-mode-hook python-mode-hook) . test-mode)))
@@ -54,12 +57,12 @@
    - ~:var~ - Set variables
      Examples:
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :var (test . t))
      #+end_src
 
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :var ((test . t)
                (test-2 . t)))
      #+end_src
@@ -67,23 +70,23 @@
    - ~:key~ - Define keybindings
      Examples:
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :key ("s" . test))
      #+end_src
 
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :key (test-mode-map . ("s" . test)))
      #+end_src
 
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :key (test-mode-map (("s" . test)
                               ("x" . test-x))))
      #+end_src
 
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :key ((test-mode-map . (("s" . test)
                                  ("x" . test-x)))
                ("b" . test-b)))
@@ -92,7 +95,7 @@
    - ~:load-path~ - Load the local directory
      Examples:
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :load-path "~/.emacs.d/third-party/lightgit")
        ;;; It is same as:
        (add-to-list 'load-path "~/.emacs.d/third-party/lightgit")
@@ -100,7 +103,7 @@
      #+end_src
 
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :load-path ("~/.emacs.d/themes" . custom-theme-load-path)	;It is same as: (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
          )
      #+end_src
@@ -108,14 +111,14 @@
    - ~:before~ - Eval before loading package
      Example:
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :before (message "Test"))
      #+end_src
 
    - ~:config~ - The configuration which will be evaled after loading package
      Example:
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :config (progn
                    (test-init)
                    (test-haha)))
@@ -124,21 +127,21 @@
    - ~:disable~ - Disable the package
      Example:
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :disable)
      #+end_src
 
    - ~:autoload~ - Autoload the package
      This keyword will be used if the package has the autoload feature.
      #+begin_src emacs-lisp
-       (package-require test
+       (gpack test
          :autoload)
      #+end_src
 
    - ~:un-require~ - Don't require the package
      This keyword is useful for theme.
      #+begin_src emacs-lisp
-       (package-require theme
+       (gpack theme
          :load-path ("~/.emacs.d/themes" . custom-theme-load-path)
          :config (load-theme 'theme t)
          :un-require)

@@ -1,10 +1,10 @@
-;;; package-require.el --- Emacs package manager, lighter with more features -*- lexical-binding: t -*-
+;;; gpack.el --- Emacs package manager, lighter with more features -*- lexical-binding: t -*-
 
 ;; Author: SpringHan
 ;; Maintainer: SpringHan
 ;; Version: 1.0
-;; Package-Requires: ((emacs "26.3"))
-;; Homepage: https://github.com/SpringHan/package-require
+;; Gpacks: ((emacs "26.3"))
+;; Homepage: https://github.com/SpringHan/gpack
 ;; Keywords: package-manager
 
 
@@ -25,61 +25,61 @@
 
 
 ;;; Commentary:
-;; `Package-Require' can help you to manage your packages easily.
+;; `Gpack' can help you to manage your packages easily.
 
 ;;; Code:
 
-(defgroup package-require nil
-  "The group for `package-require'."
+(defgroup gpack nil
+  "The group for `gpack'."
   :group 'applications)
 
-(defcustom package-require-repo-directory "~/.emacs.d/third-party/"
+(defcustom gpack-repo-directory "~/.emacs.d/third-party/"
   "The directory for the repo."
   :type 'string
-  :group 'package-require)
+  :group 'gpack)
 
-(defcustom package-require-clone-process nil
-  "The process of package-require-clone."
+(defcustom gpack-clone-process nil
+  "The process of gpack-clone."
   :type 'process
-  :group 'package-require)
+  :group 'gpack)
 
-(defcustom package-require-temp-load-path nil
+(defcustom gpack-temp-load-path nil
   "The temp `load-path'."
   :type 'symbol
-  :group 'package-require)
+  :group 'gpack)
 
-(defcustom package-require-temp-name ""
+(defcustom gpack-temp-name ""
   "The temp name."
   :type 'string
-  :group 'package-require)
+  :group 'gpack)
 
-(defcustom package-require-temp-autoload-p nil
+(defcustom gpack-temp-autoload-p nil
   "If autoload."
   :type 'symbol
-  :group 'package-require)
+  :group 'gpack)
 
-(defcustom package-require-temp-package-name nil
+(defcustom gpack-temp-package-name nil
   "The package's name."
   :type 'symbol
-  :group 'package-require)
+  :group 'gpack)
 
-(defconst package-require-clone-output-buffer "*Package-Require-Clone-Output*"
+(defconst gpack-clone-output-buffer "*Gpack-Clone-Output*"
   "The buffer name of clone output.")
 
-(defun package-require-download (name)
+(defun gpack-download (name)
   "Download the package if it has not downloaded.
 Argument NAME the package's name."
   (unless (package-installed-p name)
     (package-refresh-contents)
     (package-install name)))
 
-(defun package-require-load-path (path)
+(defun gpack-load-path (path)
   "Define the load PATH."
   (if (stringp path)
       (add-to-list 'load-path path)
     (add-to-list (cdr-safe path) (car path))))
 
-(defun package-require-set-variable (vars)
+(defun gpack-set-variable (vars)
   "Set variables.
 Argument VARS is the variables' list."
   (when (listp vars)
@@ -88,25 +88,25 @@ Argument VARS is the variables' list."
       (dolist (var-list vars)
         (set (car var-list) (eval (cdr-safe var-list)))))))
 
-(defun package-require-add-hook (hlist)
+(defun gpack-add-hook (hlist)
   "Add hooks.
 Argument HLIST is the hook list."
   (when (listp hlist)
     (if (symbolp (car hlist))
-        (package-require-hook--by-list (car hlist) (cdr-safe hlist))
+        (gpack-hook--by-list (car hlist) (cdr-safe hlist))
       (if (symbolp (cdr-safe hlist))
-          (package-require-hook--list-add (car hlist) (cdr-safe hlist))
+          (gpack-hook--list-add (car hlist) (cdr-safe hlist))
         (dolist (hook hlist)
           (if (and (listp (car hook)) (symbolp (cdr-safe hook)))
-              (package-require-hook--list-add (car hook) (cdr-safe hook))
-            (package-require-hook--by-list (car hook) (cdr-safe hook))))))))
+              (gpack-hook--list-add (car hook) (cdr-safe hook))
+            (gpack-hook--by-list (car hook) (cdr-safe hook))))))))
 
-(defun package-require-hook--list-add (hooks function)
+(defun gpack-hook--list-add (hooks function)
   "Apply FUNCTION to each HOOKS."
   (dolist (hook hooks)
     (add-hook hook function)))
 
-(defun package-require-hook--by-list (hook function)
+(defun gpack-hook--by-list (hook function)
   "Add HOOK with its FUNCTION."
   (if (symbolp function)
       (add-hook hook function)
@@ -115,22 +115,22 @@ Argument HLIST is the hook list."
       (dolist (func function)
         (add-hook hook func)))))
 
-(defun package-require-define-key (klist)
+(defun gpack-define-key (klist)
   "Define keybindings.
 Argument KLIST is the key list."
   (when (listp klist)
     (if (not (listp (car klist)))
-        (package-require-key--item-define klist)
+        (gpack-key--item-define klist)
       (dolist (key-list klist)
-        (package-require-key--item-define key-list)))))
+        (gpack-key--item-define key-list)))))
 
-(defun package-require-key--item-define (item)
+(defun gpack-key--item-define (item)
   "Define key by a ITEM."
   (pcase (type-of (car item))
     ('string (global-set-key (kbd (car item)) (cdr-safe item)))
-    ('symbol (package-require-key--by-map (car item) (cdr-safe item)))))
+    ('symbol (gpack-key--by-map (car item) (cdr-safe item)))))
 
-(defun package-require-key--by-map (map key-info)
+(defun gpack-key--by-map (map key-info)
   "Define key with MAP.
 Argument KEY-INFO is the key list for MAP."
   (if (stringp (car key-info))
@@ -140,22 +140,22 @@ Argument KEY-INFO is the key list for MAP."
       (dolist (key key-info)
         (define-key (symbol-value map) (kbd (car key)) (cdr-safe key))))))
 
-(defun package-require-repo (repo)
+(defun gpack-repo (repo)
   "Get the package from remote git repository.
 Argument REPO is the repository's info."
-  (unless (file-exists-p package-require-repo-directory)
-    (make-directory package-require-repo-directory))
+  (unless (file-exists-p gpack-repo-directory)
+    (make-directory gpack-repo-directory))
   (let (dir dir-name)
     (if (stringp repo)
         (progn
-          (setq dir (package-require-repo--get-repo-name
-                     (package-require-repo--get-repo-url repo)))
-          (setq dir-name (concat package-require-repo-directory dir))
+          (setq dir (gpack-repo--get-repo-name
+                     (gpack-repo--get-repo-url repo)))
+          (setq dir-name (concat gpack-repo-directory dir))
           (if (file-exists-p dir-name)
-              (package-require-repo--require dir-name
-                                             package-require-temp-package-name
+              (gpack-repo--require dir-name
+                                             gpack-temp-package-name
                                              'load-path)
-            (package-require-repo--clone (package-require-repo--get-repo-url repo)
+            (gpack-repo--clone (gpack-repo--get-repo-url repo)
                                          dir 1)))
       ;; If the repo is a list
       (let ((args (cdr repo))
@@ -168,18 +168,18 @@ Argument REPO is the repository's info."
             (:depth (setq depth (pop args)))))
         (setq dir (if name
                       name
-                    (package-require-repo--get-repo-name
-                     (package-require-repo--get-repo-url
+                    (gpack-repo--get-repo-name
+                     (gpack-repo--get-repo-url
                       (car repo)))))
-        (setq dir-name (concat package-require-repo-directory dir))
+        (setq dir-name (concat gpack-repo-directory dir))
         (if (file-exists-p dir-name)
-            (package-require-repo--require dir-name
-                                           package-require-temp-package-name
+            (gpack-repo--require dir-name
+                                           gpack-temp-package-name
                                            (if load
                                                load
                                              'load-path))
-          (package-require-repo--clone
-           (package-require-repo--get-repo-url
+          (gpack-repo--clone
+           (gpack-repo--get-repo-url
             (car repo))
            (if name
                name
@@ -188,72 +188,74 @@ Argument REPO is the repository's info."
            (when load
              load)))))))
 
-(defun package-require-repo--require (dir name path)
+(defun gpack-repo--require (dir name path)
   "Require the package.
 Argument DIR is the directory for package.
 Argument NAME is the name of package.
 Argument PATH is the `load-path' of package."
   (add-to-list path dir)
-  (when package-require-temp-package-name
-    (if package-require-temp-autoload-p
+  (when gpack-temp-package-name
+    (if gpack-temp-autoload-p
         (autoload (symbol-name name) name)
       (require name))
-    (setq package-require-temp-autoload-p nil
-          package-require-temp-package-name nil)))
+    (setq gpack-temp-autoload-p nil
+          gpack-temp-package-name nil)))
 
-(defun package-require-repo--clone (url name depth &optional load)
+(defun gpack-repo--clone (url name depth &optional load)
   "Clone the repository from URL.
 Argument NAME is the repository's name at locale.
 Argument DEPTH is the depth for cloning.
 Optional argument LOAD is the `load-path' for package."
   (split-window nil nil 'above)
-  (switch-to-buffer package-require-clone-output-buffer)
-  (setq package-require-temp-load-path (if load
+  (switch-to-buffer gpack-clone-output-buffer)
+  (setq gpack-temp-load-path (if load
                                            load
                                          'load-path)
-        package-require-temp-name name)
+        gpack-temp-name name)
   (if depth
-      (setq package-require-clone-process
-            (start-process "Package-Require-Clone"
-                           package-require-clone-output-buffer
+      (setq gpack-clone-process
+            (start-process "Gpack-Clone"
+                           gpack-clone-output-buffer
                            "git"
                            "clone"
                            url
-                           (expand-file-name name package-require-repo-directory)
+                           (expand-file-name name gpack-repo-directory)
                            (format "--depth=%d" depth)))
-    (setq package-require-clone-process
-          (start-process "Package-Require-Clone"
-                         package-require-clone-output-buffer
+    (setq gpack-clone-process
+          (start-process "Gpack-Clone"
+                         gpack-clone-output-buffer
                          "git"
                          "clone"
                          url
-                         (expand-file-name name package-require-repo-directory))))
-  (set-process-sentinel package-require-clone-process
-                        #'package-require-clone--sentinel))
+                         (expand-file-name name gpack-repo-directory))))
+  (set-process-sentinel gpack-clone-process
+                        #'gpack-clone--sentinel)
+  (while (process-live-p gpack-clone-process)
+    (read-char)))
 
-(defun package-require-clone--sentinel (process event)
+(defun gpack-clone--sentinel (process event)
   "Sentinel for clone process."
   (when (memq (process-status process) '(exit signal))
     (setq event (substring event 0 -1))
     (when (string-match "^finished" event)
-      (message "[Package-Require]: Clone finished.")
+      (message "[Gpack]: Clone finished.")
       (kill-buffer-and-window)
-      (add-to-list package-require-temp-load-path
-                   (concat package-require-repo-directory
-                           package-require-temp-name))
-      (when package-require-temp-package-name
-        (if package-require-temp-autoload-p
+      (add-to-list gpack-temp-load-path
+                   (concat gpack-repo-directory
+                           gpack-temp-name))
+      (when gpack-temp-package-name
+        (if gpack-temp-autoload-p
             (autoload
-              package-require-temp-package-name
-              (symbol-name package-require-temp-package-name))
-          (require package-require-temp-package-name)))
-      (setq package-require-clone-process nil
-            package-require-temp-load-path nil
-            package-require-temp-name ""
-            package-require-temp-autoload-p nil
-            package-require-temp-package-name nil))))
+              gpack-temp-package-name
+              (symbol-name gpack-temp-package-name))
+          (require gpack-temp-package-name)))
+      (setq gpack-clone-process nil
+            gpack-temp-load-path nil
+            gpack-temp-name ""
+            gpack-temp-autoload-p nil
+            gpack-temp-package-name nil))))
 
-(defun package-require-repo--get-repo-name (string)
+(defun gpack-repo--get-repo-name (string)
   "Return the repo's name in STRING."
   (if (not (string-match-p "^https://\\(?:.*\\)" string))
       string
@@ -267,14 +269,14 @@ Optional argument LOAD is the `load-path' for package."
                        (match-string 1 result))))
       result)))
 
-(defun package-require-repo--get-repo-url (string)
+(defun gpack-repo--get-repo-url (string)
   "Return the repo's url.
 Argument STRING is the string which includes url."
   (if (not (string-match-p "^https://\\(?:.*\\)" string))
       (format "https://github.com/%s" string)
     string))
 
-(defmacro package-require-read-args (name args)
+(defmacro gpack-read-args (name args)
   "Read ARGS and do the actions.
 Argument NAME is the package's name."
   (declare (debug t))
@@ -300,34 +302,35 @@ Argument NAME is the package's name."
        ,(when before
           `(eval ',before))
        ,(when load-path
-          `(package-require-load-path ',load-path))
+          `(gpack-load-path ',load-path))
        ,(when repo
-          `(progn (setq package-require-temp-package-name (if (or ,requirep
+          `(progn (setq gpack-temp-package-name (if (or ,requirep
                                                                   (null ,unrequire))
                                                               ',name
                                                             nil)
-                        package-require-temp-autoload-p ,autoload)
-                  (package-require-repo ',repo)))
+                        gpack-temp-autoload-p ,autoload)
+                  (gpack-repo ',repo)))
        (when ,requirep
          (when (and (not (require ',name nil t))
                     (null outside))
-           (package-require-download ',name)
+           (gpack-download ',name)
            (require ',name)))
+       (when (and ,autoload (null ',repo))
+         (autoload ',name (symbol-name ',name)))
        ,(when config
           (if requirep
               `(eval ',config)
             `(eval-after-load ',name ',config)))
        ,(when var
-          ;; `(package-require-get-variable ,var)
-          `(package-require-set-variable ',var)
+          `(gpack-set-variable ',var)
           )
        ,(when hook
-          `(package-require-add-hook ',hook))
+          `(gpack-add-hook ',hook))
        ,(when key
-          `(package-require-define-key ',key)))))
+          `(gpack-define-key ',key)))))
 
-(defmacro package-require (name &rest args)
-  "Main macro for `package-require'.
+(defmacro gpack (name &rest args)
+  "Main macro for `gpack'.
 
 NAME is the package's name.
 
@@ -354,8 +357,8 @@ Keywords:
 :un-require     Do not require the package."
   (declare (indent 1))
   (unless (memq :disable args)
-    `(package-require-read-args ,name ,args)))
+    `(gpack-read-args ,name ,args)))
 
-(provide 'package-require)
+(provide 'gpack)
 
-;;; package-require.el ends here
+;;; gpack.el ends here
