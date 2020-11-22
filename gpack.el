@@ -238,7 +238,7 @@ Optional argument LOAD is the `load-path' for package."
   (when (memq (process-status process) '(exit signal))
     (setq event (substring event 0 -1))
     (when (string-match "^finished" event)
-      (message "[Gpack]: Clone finished.")
+      (message "[Gpack]: Clone finished.Press any key to confirm.")
       (kill-buffer-and-window)
       (add-to-list gpack-temp-load-path
                    (concat gpack-repo-directory
