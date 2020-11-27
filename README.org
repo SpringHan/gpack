@@ -27,8 +27,6 @@
        ;;; `:load' is the load path.
        ;;; `:depth' is the depth for the clone, it can be number.If it's nil, the whole repository will be clone.
      #+end_src
-     
-     When the clone succeeded, you should press any key to confirm.
 
    - ~:hook~ - Add hooks
      Examples:

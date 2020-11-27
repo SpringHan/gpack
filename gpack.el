@@ -231,7 +231,7 @@ Optional argument LOAD is the `load-path' for package."
   (set-process-sentinel gpack-clone-process
                         #'gpack-clone--sentinel)
   (while (process-live-p gpack-clone-process)
-    (read-char)))
+    (read-char nil nil 0.1)))
 
 (defun gpack-clone--sentinel (process event)
   "Sentinel for clone process."
