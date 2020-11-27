@@ -312,7 +312,7 @@ Argument NAME is the package's name."
                   (gpack-repo ',repo)))
        (when ,requirep
          (when (and (not (require ',name nil t))
-                    (null outside))
+                    (null ,outside))
            (gpack-download ',name)
            (require ',name)))
        (when (and ,autoload (null ',repo))
