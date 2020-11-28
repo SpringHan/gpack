@@ -144,3 +144,9 @@
          :config (load-theme 'theme t)
          :un-require)
      #+end_src
+
+   - ~:delete~ - Delete the current package
+     #+begin_src emacs-lisp
+       (gpack test
+         :delete)
+     #+end_src

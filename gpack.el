@@ -66,6 +66,19 @@
 (defconst gpack-clone-output-buffer "*Gpack-Clone-Output*"
   "The buffer name of clone output.")
 
+(defun gpack-delete-package (package-name)
+  "Delete package by its PACKAGE-NAME."
+  (let ((package-built-in (package-built-in-p package-name))
+        package-desc)
+    (dolist (package (package--alist))
+      (when (eq (car package) package-name)
+        (setq package-desc (apply #'append (cdr package)))))
+    (if (null package-desc)
+        (if package-built-in
+            (message "Package %s is built-in!" package-name)
+          (message "Package %s has not installed!" package-name))
+      (package-delete package-desc))))
+
 (defun gpack-download (name)
   "Download the package if it has not downloaded.
 Argument NAME the package's name."
@@ -153,10 +166,10 @@ Argument REPO is the repository's info."
           (setq dir-name (concat gpack-repo-directory dir))
           (if (file-exists-p dir-name)
               (gpack-repo--require dir-name
-                                             gpack-temp-package-name
-                                             'load-path)
+                                   gpack-temp-package-name
+                                   'load-path)
             (gpack-repo--clone (gpack-repo--get-repo-url repo)
-                                         dir 1)))
+                               dir 1)))
       ;; If the repo is a list
       (let ((args (cdr repo))
             (depth 1)
@@ -174,10 +187,10 @@ Argument REPO is the repository's info."
         (setq dir-name (concat gpack-repo-directory dir))
         (if (file-exists-p dir-name)
             (gpack-repo--require dir-name
-                                           gpack-temp-package-name
-                                           (if load
-                                               load
-                                             'load-path))
+                                 gpack-temp-package-name
+                                 (if load
+                                     load
+                                   'load-path))
           (gpack-repo--clone
            (gpack-repo--get-repo-url
             (car repo))
@@ -209,8 +222,8 @@ Optional argument LOAD is the `load-path' for package."
   (split-window nil nil 'above)
   (switch-to-buffer gpack-clone-output-buffer)
   (setq gpack-temp-load-path (if load
-                                           load
-                                         'load-path)
+                                 load
+                               'load-path)
         gpack-temp-name name)
   (if depth
       (setq gpack-clone-process
@@ -305,9 +318,9 @@ Argument NAME is the package's name."
           `(gpack-load-path ',load-path))
        ,(when repo
           `(progn (setq gpack-temp-package-name (if (or ,requirep
-                                                                  (null ,unrequire))
-                                                              ',name
-                                                            nil)
+                                                        (null ,unrequire))
+                                                    ',name
+                                                  nil)
                         gpack-temp-autoload-p ,autoload)
                   (gpack-repo ',repo)))
        (when ,requirep
@@ -354,10 +367,15 @@ Keywords:
 
 :autoload       Autoload the package.
 
-:un-require     Do not require the package."
+:un-require     Do not require the package.
+(Read the README file for details.)"
   (declare (indent 1))
   (unless (memq :disable args)
-    `(gpack-read-args ,name ,args)))
+    (if (memq :delete args)
+        `(if (package-installed-p ',name)
+             (gpack-delete-package ',name)
+           (message "[GPack]: Package %s has not installed!" ',name))
+      `(gpack-read-args ,name ,args))))
 
 (provide 'gpack)
 
